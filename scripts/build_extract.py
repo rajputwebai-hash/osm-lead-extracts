@@ -21,6 +21,7 @@ UA = "osm-lead-extracts/1.0 (https://github.com/{repo})".format(
     repo=os.environ.get("GITHUB_REPOSITORY", "osm-lead-extracts"))
 WORK = os.environ.get("WORK_DIR", "work")
 DATA = "data"
+DIAG = "diagnostics/last-failure.txt"
 
 INDUSTRIES = {
     "restaurant": {
@@ -47,7 +48,7 @@ STAGE = {"name": "start"}
 
 def write_failure(text):
     os.makedirs("diagnostics", exist_ok=True)
-    with open("diagnostics/last-failure.txt", "w") as f:
+    with open(DIAG, "w") as f:
         f.write(text)
 
 
@@ -130,9 +131,29 @@ def convert(geojsonseq, rules):
     return out
 
 
+def pick_boundary(braw, rel_num, rel):
+    allf = json.load(open(braw))["features"]
+    polys = [f for f in allf if f.get("geometry") and f["geometry"]["type"] in ("Polygon", "MultiPolygon")]
+
+    def fid_ok(f):
+        v = str(f.get("id", ""))
+        p = f.get("properties") or {}
+        return v in (rel, str(rel_num)) or str(p.get("@id", "")) in (rel, str(rel_num)) or str(p.get("@type", "")) == "relation" and str(p.get("@id", "")) == str(rel_num)
+    feats = [f for f in polys if fid_ok(f)]
+    if not feats and len(polys) == 1:
+        feats = polys
+    if not feats:
+        summary = [(f.get("id"), (f.get("geometry") or {}).get("type"), dict(list((f.get("properties") or {}).items())[:6])) for f in allf[:15]]
+        write_failure("stage: boundary_polygon\nfeatures: %d, polygons: %d\nfirst features: %s\n" % (len(allf), len(polys), json.dumps(summary)[:3000]))
+        raise SystemExit("No polygon geometry built for %s" % rel)
+    return feats[0], len(allf), len(polys)
+
+
 def main():
     slug = sys.argv[1]
     city = json.load(open("cities.json"))[slug]
+    if os.path.exists(DIAG):
+        os.remove(DIAG)
     os.makedirs(WORK, exist_ok=True)
     os.makedirs(DATA, exist_ok=True)
     timings, t_all = {}, time.time()
@@ -154,11 +175,9 @@ def main():
     run(["osmium", "export", "-O", "-f", "geojson", "--geometry-types=polygon", "--add-unique-id=type_id", "-o", braw, bsrc],
         timings, "boundary_export_s")
     STAGE["name"] = "boundary_polygon"
-    feats = [f for f in json.load(open(braw))["features"] if str(f.get("id")) == rel and f.get("geometry")]
-    if not feats:
-        raise SystemExit("No polygon geometry built for %s" % rel)
+    feat, n_all, n_poly = pick_boundary(braw, city["osm_relation_id"], rel)
     bpoly = os.path.join(WORK, "boundary.geojson")
-    json.dump({"type": "Feature", "properties": {}, "geometry": feats[0]["geometry"]}, open(bpoly, "w"))
+    json.dump({"type": "Feature", "properties": {}, "geometry": feat["geometry"]}, open(bpoly, "w"))
 
     city_pbf = os.path.join(WORK, "city.osm.pbf")
     run(["osmium", "extract", "-p", bpoly, "-s", "smart", "-O", "-o", city_pbf, pbf], timings, "city_extract_s")
@@ -170,6 +189,7 @@ def main():
         "source_pbf_bytes": pbf_size,
         "source_pbf_md5_verified": True,
         "source_osm_data_timestamp": ts,
+        "boundary_geometry": feat["geometry"]["type"],
         "city_pbf_bytes": os.path.getsize(city_pbf),
         "industries": {},
     }
@@ -213,6 +233,7 @@ def main():
     stats["github_run_id"] = os.environ.get("GITHUB_RUN_ID")
     with open(os.path.join(DATA, "%s-stats.json" % slug), "w") as f:
         json.dump(stats, f, indent=2)
+    write_failure("none - last build succeeded (run %s)\n" % os.environ.get("GITHUB_RUN_ID"))
     print(json.dumps(stats, indent=2))
 
 
@@ -220,9 +241,8 @@ if __name__ == "__main__":
     try:
         main()
     except SystemExit as e:
-        if not os.path.exists("diagnostics/last-failure.txt") or e.code not in (None, 0):
-            if isinstance(e.code, str):
-                write_failure("stage: %s\nmessage: %s\n" % (STAGE["name"], e.code))
+        if isinstance(e.code, str) and not os.path.exists(DIAG):
+            write_failure("stage: %s\nmessage: %s\n" % (STAGE["name"], e.code))
         raise
     except Exception:
         import traceback
