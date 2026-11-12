@@ -34,14 +34,15 @@ jobs:
       - name: Build Austin, TX extracts
         run: python3 scripts/build_extract.py austin-tx
 
-      - name: Commit data if the OSM-derived output changed
+      - name: Commit data (or failure diagnostics) if output changed
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/
+          for d in data diagnostics; do [ -e "$d" ] && git add "$d"; done
           if git diff --cached --quiet; then
             echo "No data changes; nothing to commit."
           else
-            git commit -m "Update Austin extracts (OSM data $(python3 -c "import json;print(json.load(open('data/austin-tx-stats.json'))['source_osm_data_timestamp'])"))"
+            git commit -m "Update extracts / diagnostics (run ${GITHUB_RUN_ID})"
             git push
           fi

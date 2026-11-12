@@ -42,19 +42,33 @@ INDUSTRIES = {
 COPYRIGHT = ("Contains data (c) OpenStreetMap contributors, available under the Open "
              "Database License (ODbL) 1.0: https://www.openstreetmap.org/copyright")
 
+STAGE = {"name": "start"}
+
+
+def write_failure(text):
+    os.makedirs("diagnostics", exist_ok=True)
+    with open("diagnostics/last-failure.txt", "w") as f:
+        f.write(text)
+
 
 def run(cmd, timings, label):
     t = time.time()
+    STAGE["name"] = label
     print("+", " ".join(cmd), flush=True)
-    subprocess.run(cmd, check=True)
+    r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, errors="replace")
     timings[label] = round(time.time() - t, 1)
+    if r.stderr:
+        print(r.stderr[-3000:], flush=True)
+    if r.returncode != 0:
+        write_failure("stage: %s\ncommand: %s\nexit code: %s\nelapsed_s: %s\nstdout (tail):\n%s\nstderr (tail):\n%s\n" % (
+            label, " ".join(cmd), r.returncode, timings[label], r.stdout[-2000:], r.stderr[-4000:]))
+        raise SystemExit("Command failed at stage %s (exit %s)" % (label, r.returncode))
+    return r.stdout
 
 
 def download(url, dest, timings):
-    t = time.time()
-    run(["curl", "-fsSL", "--retry", "3", "--retry-delay", "10", "-A", UA, "-D", dest + ".headers", "-o", dest, url],
+    run(["curl", "-fsSL", "--retry", "3", "--retry-delay", "10", "-A", UA, "-o", dest, url],
         timings, "download_pbf_s")
-    return {k.lower(): v.strip() for k, v in (l.split(":", 1) for l in open(dest + ".headers", errors="replace") if ":" in l)}
 
 
 def md5_of(path):
@@ -124,14 +138,14 @@ def main():
     timings, t_all = {}, time.time()
 
     pbf = os.path.join(WORK, "state.osm.pbf")
-    headers = download(city["geofabrik_pbf"], pbf, timings)
+    download(city["geofabrik_pbf"], pbf, timings)
+    STAGE["name"] = "md5"
     md5_txt = urllib.request.urlopen(urllib.request.Request(city["geofabrik_md5"], headers={"User-Agent": UA})).read().decode().split()[0]
     actual = md5_of(pbf)
     if actual != md5_txt:
         raise SystemExit("MD5 mismatch: expected %s got %s" % (md5_txt, actual))
     pbf_size = os.path.getsize(pbf)
-    ts = subprocess.run(["osmium", "fileinfo", "-g", "header.option.osmosis_replication_timestamp", pbf],
-                        capture_output=True, text=True, check=True).stdout.strip()
+    ts = run(["osmium", "fileinfo", "-g", "header.option.osmosis_replication_timestamp", pbf], timings, "fileinfo_s").strip()
 
     rel = "r%d" % city["osm_relation_id"]
     bsrc = os.path.join(WORK, "boundary_src.osm.pbf")
@@ -139,6 +153,7 @@ def main():
     braw = os.path.join(WORK, "boundary_all.geojson")
     run(["osmium", "export", "-O", "-f", "geojson", "--geometry-types=polygon", "--add-unique-id=type_id", "-o", braw, bsrc],
         timings, "boundary_export_s")
+    STAGE["name"] = "boundary_polygon"
     feats = [f for f in json.load(open(braw))["features"] if str(f.get("id")) == rel and f.get("geometry")]
     if not feats:
         raise SystemExit("No polygon geometry built for %s" % rel)
@@ -173,6 +188,7 @@ def main():
         seq = os.path.join(WORK, "%s.geojsonseq" % ind)
         run(["osmium", "export", "-O", "-f", "geojsonseq", "-x", "print_record_separator=false", "--add-unique-id=type_id", "-o", seq, merged],
             timings, "%s_export_s" % ind)
+        STAGE["name"] = "%s_convert" % ind
         elements = convert(seq, spec["match"])
         doc = {
             "version": 0.6,
@@ -201,4 +217,14 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit as e:
+        if not os.path.exists("diagnostics/last-failure.txt") or e.code not in (None, 0):
+            if isinstance(e.code, str):
+                write_failure("stage: %s\nmessage: %s\n" % (STAGE["name"], e.code))
+        raise
+    except Exception:
+        import traceback
+        write_failure("stage: %s\npython exception:\n%s" % (STAGE["name"], traceback.format_exc()[-4000:]))
+        raise
