@@ -29,18 +29,18 @@
     }
   },
   "timings_seconds": {
-    "download_pbf_s": 59.3,
+    "download_pbf_s": 73.5,
     "fileinfo_s": 0.0,
-    "boundary_getid_s": 21.4,
+    "boundary_getid_s": 14.5,
     "boundary_export_s": 0.0,
-    "city_extract_s": 20.6,
-    "restaurant_filter_0_s": 1.9,
+    "city_extract_s": 15.3,
+    "restaurant_filter_0_s": 1.1,
     "restaurant_export_s": 0.0,
-    "real_estate_filter_0_s": 1.1,
-    "real_estate_filter_1_s": 0.9,
+    "real_estate_filter_0_s": 0.7,
+    "real_estate_filter_1_s": 0.7,
     "real_estate_merge_s": 0.0,
     "real_estate_export_s": 0.0,
-    "total_s": 106.7
+    "total_s": 108.0
   },
-  "github_run_id": "43128097968"
+  "github_run_id": "43176662288"
 }
