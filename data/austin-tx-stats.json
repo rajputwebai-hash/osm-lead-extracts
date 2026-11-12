@@ -1,0 +1,46 @@
+{
+  "city": "austin-tx",
+  "osm_relation_id": 113314,
+  "source_pbf": "https://download.geofabrik.de/north-america/us/texas-latest.osm.pbf",
+  "source_pbf_bytes": 727753482,
+  "source_pbf_md5_verified": true,
+  "source_osm_data_timestamp": "2026-11-11T21:22:47Z",
+  "boundary_geometry": "MultiPolygon",
+  "city_pbf_bytes": 31286982,
+  "industries": {
+    "restaurant": {
+      "file": "data/austin-tx-restaurant.json",
+      "elements": 1718,
+      "by_type": {
+        "node": 1131,
+        "way": 586,
+        "relation": 1
+      },
+      "bytes": 668431
+    },
+    "real_estate": {
+      "file": "data/austin-tx-real_estate.json",
+      "elements": 81,
+      "by_type": {
+        "node": 36,
+        "way": 45
+      },
+      "bytes": 36033
+    }
+  },
+  "timings_seconds": {
+    "download_pbf_s": 59.3,
+    "fileinfo_s": 0.0,
+    "boundary_getid_s": 21.4,
+    "boundary_export_s": 0.0,
+    "city_extract_s": 20.6,
+    "restaurant_filter_0_s": 1.9,
+    "restaurant_export_s": 0.0,
+    "real_estate_filter_0_s": 1.1,
+    "real_estate_filter_1_s": 0.9,
+    "real_estate_merge_s": 0.0,
+    "real_estate_export_s": 0.0,
+    "total_s": 106.7
+  },
+  "github_run_id": "43128097968"
+}

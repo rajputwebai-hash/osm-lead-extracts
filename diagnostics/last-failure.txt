@@ -1,3 +1,1 @@
-stage: boundary_polygon
-features: 9, polygons: 9
-first features: [["a1225776678", "MultiPolygon", {"name": "Austin"}], ["a1225776696", "MultiPolygon", {"fixme": "recheck"}], ["a1225776726", "MultiPolygon", {"name": "Austin"}], ["a1225776796", "MultiPolygon", {"line": "no"}], ["a1225776798", "MultiPolygon", {"natural": "scrub"}], ["a1225776806", "MultiPolygon", {"name": "Austin"}], ["a1225776808", "MultiPolygon", {"name": "Austin"}], ["a1225776814", "MultiPolygon", {"name": "Austin"}], ["a226629", "MultiPolygon", {"admin_level": "8", "border_type": "city", "boundary": "administrative", "gnis:feature_id": "2409761", "name": "Austin", "name:ar": "\u0623\u0648\u0633\u062a\u0646"}]]
+none - last build succeeded (run 43128097968)
