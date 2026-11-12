@@ -1,0 +1,9 @@
+{
+  "austin-tx": {
+    "name": "Austin, Texas",
+    "osm_relation_id": 113314,
+    "overpass_area_id": 3600113314,
+    "geofabrik_pbf": "https://download.geofabrik.de/north-america/us/texas-latest.osm.pbf",
+    "geofabrik_md5": "https://download.geofabrik.de/north-america/us/texas-latest.osm.pbf.md5"
+  }
+}

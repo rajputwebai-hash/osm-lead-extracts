@@ -1,0 +1,47 @@
+name: Build OSM extracts
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily, after Geofabrik's ~21:00 CET extract refresh
+    - cron: '17 6 * * *'
+  push:
+    paths:
+      - 'scripts/**'
+      - 'cities.json'
+      - '.github/workflows/build-extracts.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-extracts
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install osmium-tool
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y osmium-tool
+          osmium --version
+
+      - name: Build Austin, TX extracts
+        run: python3 scripts/build_extract.py austin-tx
+
+      - name: Commit data if the OSM-derived output changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "No data changes; nothing to commit."
+          else
+            git commit -m "Update Austin extracts (OSM data $(python3 -c "import json;print(json.load(open('data/austin-tx-stats.json'))['source_osm_data_timestamp'])"))"
+            git push
+          fi
