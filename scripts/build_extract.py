@@ -8,6 +8,9 @@ Pipeline: Geofabrik state PBF -> city boundary polygon (OSM relation) -> osmium 
 Output elements mirror Overpass `out tags center`:
   node:            {type, id, lat, lon, tags}
   way / relation:  {type, id, center: {lat, lon}, tags}
+
+osmium export labels polygons built from ways/relations as areas with an "a" prefix:
+area id = 2*way_id (ways) or 2*relation_id+1 (relations). These are decoded back to the OSM id.
 """
 import hashlib
 import json
@@ -99,6 +102,17 @@ def matches(tags, rules):
     return any(tags.get(k) in vals for k, vals in rules)
 
 
+def decode_id(fid):
+    """Map an osmium export feature id (n123, w123, r123, a123) to (osm type, osm id)."""
+    fid = str(fid or "")
+    if len(fid) < 2 or fid[0] not in "nwra" or not fid[1:].isdigit():
+        return None
+    c, n = fid[0], int(fid[1:])
+    if c == "a":
+        return ("way", n // 2) if n % 2 == 0 else ("relation", (n - 1) // 2)
+    return {"n": "node", "w": "way", "r": "relation"}[c], n
+
+
 def convert(geojsonseq, rules):
     seen, out = set(), []
     with open(geojsonseq, encoding="utf-8") as f:
@@ -107,18 +121,17 @@ def convert(geojsonseq, rules):
             if not line:
                 continue
             feat = json.loads(line)
-            fid = str(feat.get("id", ""))
-            if len(fid) < 2 or fid[0] not in "nwr" or not fid[1:].isdigit():
+            key = decode_id(feat.get("id"))
+            if key is None:
                 continue
+            typ, oid = key
             tags = feat.get("properties") or {}
             tags = {k: v for k, v in tags.items() if not k.startswith("@")}
             if not matches(tags, rules) or not feat.get("geometry"):
                 continue
-            typ = {"n": "node", "w": "way", "r": "relation"}[fid[0]]
-            oid = int(fid[1:])
-            if (typ, oid) in seen:
+            if key in seen:
                 continue
-            seen.add((typ, oid))
+            seen.add(key)
             g = feat["geometry"]
             if typ == "node" and g["type"] == "Point":
                 el = {"type": typ, "id": oid, "lat": g["coordinates"][1], "lon": g["coordinates"][0], "tags": tags}
@@ -131,21 +144,14 @@ def convert(geojsonseq, rules):
     return out
 
 
-def pick_boundary(braw, rel_num, rel):
+def pick_boundary(braw, rel_num):
     allf = json.load(open(braw))["features"]
     polys = [f for f in allf if f.get("geometry") and f["geometry"]["type"] in ("Polygon", "MultiPolygon")]
-
-    def fid_ok(f):
-        v = str(f.get("id", ""))
-        p = f.get("properties") or {}
-        return v in (rel, str(rel_num)) or str(p.get("@id", "")) in (rel, str(rel_num)) or str(p.get("@type", "")) == "relation" and str(p.get("@id", "")) == str(rel_num)
-    feats = [f for f in polys if fid_ok(f)]
-    if not feats and len(polys) == 1:
-        feats = polys
+    feats = [f for f in polys if decode_id(f.get("id")) == ("relation", rel_num)]
     if not feats:
-        summary = [(f.get("id"), (f.get("geometry") or {}).get("type"), dict(list((f.get("properties") or {}).items())[:6])) for f in allf[:15]]
+        summary = [(f.get("id"), (f.get("geometry") or {}).get("type"), dict(list((f.get("properties") or {}).items())[:4])) for f in allf[:15]]
         write_failure("stage: boundary_polygon\nfeatures: %d, polygons: %d\nfirst features: %s\n" % (len(allf), len(polys), json.dumps(summary)[:3000]))
-        raise SystemExit("No polygon geometry built for %s" % rel)
+        raise SystemExit("No polygon geometry built for relation %s" % rel_num)
     return feats[0], len(allf), len(polys)
 
 
@@ -175,7 +181,7 @@ def main():
     run(["osmium", "export", "-O", "-f", "geojson", "--geometry-types=polygon", "--add-unique-id=type_id", "-o", braw, bsrc],
         timings, "boundary_export_s")
     STAGE["name"] = "boundary_polygon"
-    feat, n_all, n_poly = pick_boundary(braw, city["osm_relation_id"], rel)
+    feat, n_all, n_poly = pick_boundary(braw, city["osm_relation_id"])
     bpoly = os.path.join(WORK, "boundary.geojson")
     json.dump({"type": "Feature", "properties": {}, "geometry": feat["geometry"]}, open(bpoly, "w"))
 
