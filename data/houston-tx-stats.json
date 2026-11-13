@@ -1,0 +1,46 @@
+{
+  "city": "houston-tx",
+  "osm_relation_id": 2688911,
+  "source_pbf": "https://download.geofabrik.de/north-america/us/texas-latest.osm.pbf",
+  "source_pbf_bytes": 727864331,
+  "source_pbf_md5_verified": true,
+  "source_osm_data_timestamp": "2026-11-12T21:23:05Z",
+  "boundary_geometry": "MultiPolygon",
+  "city_pbf_bytes": 38054738,
+  "industries": {
+    "restaurant": {
+      "file": "data/houston-tx-restaurant.json",
+      "elements": 2757,
+      "by_type": {
+        "node": 1803,
+        "way": 953,
+        "relation": 1
+      },
+      "bytes": 1047452
+    },
+    "real_estate": {
+      "file": "data/houston-tx-real_estate.json",
+      "elements": 33,
+      "by_type": {
+        "node": 23,
+        "way": 10
+      },
+      "bytes": 10423
+    }
+  },
+  "timings_seconds": {
+    "download_pbf_s": 129.5,
+    "fileinfo_s": 0.0,
+    "boundary_getid_s": 21.6,
+    "boundary_export_s": 0.0,
+    "city_extract_s": 23.8,
+    "restaurant_filter_0_s": 1.8,
+    "restaurant_export_s": 0.0,
+    "real_estate_filter_0_s": 1.2,
+    "real_estate_filter_1_s": 1.2,
+    "real_estate_merge_s": 0.0,
+    "real_estate_export_s": 0.0,
+    "total_s": 180.7
+  },
+  "github_run_id": "43497235535"
+}
