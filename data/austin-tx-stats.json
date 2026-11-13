@@ -2,45 +2,45 @@
   "city": "austin-tx",
   "osm_relation_id": 113314,
   "source_pbf": "https://download.geofabrik.de/north-america/us/texas-latest.osm.pbf",
-  "source_pbf_bytes": 727753482,
+  "source_pbf_bytes": 727864331,
   "source_pbf_md5_verified": true,
-  "source_osm_data_timestamp": "2026-11-11T21:22:47Z",
+  "source_osm_data_timestamp": "2026-11-12T21:23:05Z",
   "boundary_geometry": "MultiPolygon",
-  "city_pbf_bytes": 31286982,
+  "city_pbf_bytes": 31289285,
   "industries": {
     "restaurant": {
       "file": "data/austin-tx-restaurant.json",
-      "elements": 1718,
+      "elements": 1723,
       "by_type": {
-        "node": 1131,
+        "node": 1136,
         "way": 586,
         "relation": 1
       },
-      "bytes": 668431
+      "bytes": 670196
     },
     "real_estate": {
       "file": "data/austin-tx-real_estate.json",
-      "elements": 81,
+      "elements": 80,
       "by_type": {
         "node": 36,
-        "way": 45
+        "way": 44
       },
-      "bytes": 36033
+      "bytes": 35863
     }
   },
   "timings_seconds": {
-    "download_pbf_s": 73.5,
+    "download_pbf_s": 35.4,
     "fileinfo_s": 0.0,
-    "boundary_getid_s": 14.5,
+    "boundary_getid_s": 22.4,
     "boundary_export_s": 0.0,
-    "city_extract_s": 15.3,
-    "restaurant_filter_0_s": 1.1,
+    "city_extract_s": 25.4,
+    "restaurant_filter_0_s": 1.5,
     "restaurant_export_s": 0.0,
-    "real_estate_filter_0_s": 0.7,
-    "real_estate_filter_1_s": 0.7,
+    "real_estate_filter_0_s": 1.2,
+    "real_estate_filter_1_s": 1.2,
     "real_estate_merge_s": 0.0,
     "real_estate_export_s": 0.0,
-    "total_s": 108.0
+    "total_s": 88.6
   },
-  "github_run_id": "43176662288"
+  "github_run_id": "43386793740"
 }
