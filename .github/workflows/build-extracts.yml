@@ -2,14 +2,6 @@ name: Build OSM extracts
 
 on:
   workflow_dispatch:
-  schedule:
-    # Daily, after Geofabrik's ~21:00 CET extract refresh
-    - cron: '17 6 * * *'
-  push:
-    paths:
-      - 'scripts/**'
-      - 'cities.json'
-      - '.github/workflows/build-extracts.yml'
 
 permissions:
   contents: write
@@ -21,7 +13,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -31,8 +23,14 @@ jobs:
           sudo apt-get install -y osmium-tool
           osmium --version
 
-      - name: Build Austin, TX extracts
-        run: python3 scripts/build_extract.py austin-tx
+      - name: Build every city listed in cities.json
+        run: |
+          failed=0
+          for slug in $(python3 -c "import json; print(' '.join(json.load(open('cities.json'))))"); do
+            echo "=== $slug ==="
+            python3 scripts/build_extract.py "$slug" || { echo "FAILED: $slug"; failed=1; }
+          done
+          exit $failed
 
       - name: Commit data (or failure diagnostics) if output changed
         if: always()
