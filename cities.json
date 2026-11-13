@@ -5,5 +5,12 @@
     "overpass_area_id": 3600113314,
     "geofabrik_pbf": "https://download.geofabrik.de/north-america/us/texas-latest.osm.pbf",
     "geofabrik_md5": "https://download.geofabrik.de/north-america/us/texas-latest.osm.pbf.md5"
+  },
+  "houston-tx": {
+    "name": "Houston, Texas",
+    "osm_relation_id": 2688911,
+    "overpass_area_id": 3602688911,
+    "geofabrik_pbf": "https://download.geofabrik.de/north-america/us/texas-latest.osm.pbf",
+    "geofabrik_md5": "https://download.geofabrik.de/north-america/us/texas-latest.osm.pbf.md5"
   }
 }
